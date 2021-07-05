@@ -6,15 +6,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
 def sigmoid(input):
+    """The sigmoid function."""
     return 1 / (1 + math.exp(-input))
 
 class NN:
+    """A neural network."""
     def __init__(self, layers):
         lastDim = layers[0]
         self.layers = []
@@ -29,18 +31,13 @@ class NN:
         logger.debug("New shape: %s", [l.shape for l in self.layers])
 
 class ForwardEvaluator:
+    """Forward-evaluates a neural network."""
     def Evaluate(self, nn, input):
         state = input
         for layer in nn.layers:
             state = np.dot(layer, state)
             state = np.array([nn.activation(i) for i in state])
         return state
-
-def parseLine(line):
-    values = line.split(",")
-    target = int(values[0])
-    input = np.array([val / 255 for val in values[1:]])
-    return target, input
 
 def main():
     nn = NN([4,3,2])
@@ -58,11 +55,8 @@ def main():
         count += 1
         if target == (output[0] < output[1]):
             correct += 1
-            logger.debug("Result: %s, target: %s", output[1], target)
-        else:
-            logger.debug("Result: %s, target: %s", output[0], target)
 
     logger.info("Success rate: %d of %d (%d%%)", correct, count, correct * 100 / count)
 
-main()
+
 
