@@ -58,5 +58,4 @@ def main():
 
     logger.info("Success rate: %d of %d (%d%%)", correct, count, correct * 100 / count)
 
-
-
+main()
