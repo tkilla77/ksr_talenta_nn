@@ -3,7 +3,7 @@ import math
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(levelname)s - %(message)s')
@@ -75,7 +75,7 @@ class GradientDescentOptimizer:
             gradient = np.dot(term, state_T)
             logger.debug("Gradient is: %s", gradient)
             logger.debug("Increment is: %s", -1 * self.learning_rate * gradient)
-            layer.weights = layer.weights - self.learning_rate * gradient
+            layer.weights = layer.weights + self.learning_rate * gradient
             output = layer.state
             error = next_error
 
@@ -100,17 +100,17 @@ class NetworkIO:
         
 
 def main():
-    # nn = NetworkIO.Load("toy_network.nn.npz")
-    nn = NN()
-    nn.SetRandomWeights([4,3,2])
+    nn = NetworkIO.Load("toy_network.nn.npz")
+    # nn = NN()
+    # nn.SetRandomWeights([4,3,2])
     # nn.SetWeights([np.array([[-0.3, -0.7, -0.9,-0.9],[-1,-0.6,-0.6, -0.6],[0.8, 0.5, 0.7, 0.8]]),
     #                np.array([[2.6, 2.1, -1.2],[-2.3, -2.3, 1.1]])])
 
     evaluator = ForwardEvaluator()
-    optimizer = GradientDescentOptimizer(0.1)
+    optimizer = GradientDescentOptimizer(1)
     count = 0
     correct = 0
-    for line in np.loadtxt("data_toy_problem/data_dark_bright_test_4000.csv", delimiter=","):
+    for line in np.loadtxt("data_toy_problem/data_dark_bright_training_20000.csv", delimiter=","):
         target = line[0]
         input = np.asfarray(line[1:]) / 255
         output = evaluator.Evaluate(nn, input)
