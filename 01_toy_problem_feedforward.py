@@ -17,12 +17,12 @@ def sigmoid(input):
 
 class Layer:
     """One layer in a neural network.
-    It carries its neurons' output state and its input weights.
+    It carries its neurons' input state and its input weights.
     """
     def __init__(self, weights, state):
         self.weights = weights
         self.state = state
-        assert weights.shape[0] == state.shape[0], "Expected same size: %s/%s" % (weights.shape, state.shape)
+        assert weights.shape[1] == state.shape[0], "Expected compatible size: %s/%s" % (weights.shape, state.shape)
 
 class NN:
     """A neural network."""
@@ -34,14 +34,14 @@ class NN:
         lastDim = dimensions[0]
         self.layers = []
         for dimension in dimensions[1:]:
-            self.layers.append(Layer(np.random.rand(dimension, lastDim), np.zeros(dimension)))
+            self.layers.append(Layer(np.random.rand(dimension, lastDim), np.zeros(lastDim)))
             lastDim = dimension
 
     def SetWeights(self, weights):
         logger.info("SetWeights: old shape: %s", [l.state.size for l in self.layers])
         self.layers = []
         for newweights in weights:
-            self.layers.append(Layer(newweights, np.zeros(newweights.shape[0])))
+            self.layers.append(Layer(newweights, np.zeros(newweights.shape[1])))
         logger.info("New shape: %s", [l.state.size for l in self.layers])
 
 class ForwardEvaluator:
@@ -49,9 +49,9 @@ class ForwardEvaluator:
     def Evaluate(self, nn, input):
         state = input
         for layer in nn.layers:
+            layer.state = state
             state = np.dot(layer.weights, state)
             state = np.array([nn.activation(i) for i in state])
-            layer.state = state
         return state
 
 class GradientDescentOptimizer:
@@ -68,12 +68,13 @@ class GradientDescentOptimizer:
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
             next_error = np.dot(layer.weights.T, error)
-            term = error * layer.state * (1-layer.state)
+            term = error * output * (1-output)
             logger.debug("Gradient term is: %s", term)
             gradient = np.dot(error * layer.state * (1-layer.state), layer.state.T)
             logger.debug("Gradient is: %s", gradient)
             logger.debug("Increment is: %s", -1 * self.learning_rate * gradient)
             layer.weights = layer.weights - self.learning_rate * gradient
+            output = layer.state
             error = next_error
 
 
