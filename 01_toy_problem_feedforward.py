@@ -68,9 +68,11 @@ class GradientDescentOptimizer:
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
             next_error = np.dot(layer.weights.T, error)
-            term = error * output * (1-output)
-            logger.debug("Gradient term is: %s", term)
-            gradient = np.dot(error * layer.state * (1-layer.state), layer.state.T)
+            term = (error * output * (1-output)).reshape(-1,1)
+            logger.debug("Gradient term shape: %s", term.shape)
+            state_T = layer.state.reshape(1,-1)
+            logger.debug("State shape is: %s", state_T.shape)
+            gradient = np.dot(term, state_T)
             logger.debug("Gradient is: %s", gradient)
             logger.debug("Increment is: %s", -1 * self.learning_rate * gradient)
             layer.weights = layer.weights - self.learning_rate * gradient
