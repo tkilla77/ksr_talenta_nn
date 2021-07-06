@@ -85,14 +85,16 @@ class NetworkIO:
     @staticmethod
     def Store(file, nn):
         """Stores a NN to file."""
-        np.savez(file, *nn.layers)
+        arrays = [layer.weights for layer in nn.layers]
+        np.savez(file, *arrays)
 
     @staticmethod
     def Load(file):
         """Loads a NN from file."""
         npzfile = np.load(file)
         layers = []
-        for weights in npzfile.files:
+        for weights in sorted(npzfile.files):
+            logger.info("loading layer %s, %s", weights, npzfile[weights])
             layers.append(npzfile[weights])
         nn = NN()
         nn.SetWeights(layers)
@@ -107,10 +109,10 @@ def main():
     #                np.array([[2.6, 2.1, -1.2],[-2.3, -2.3, 1.1]])])
 
     evaluator = ForwardEvaluator()
-    optimizer = GradientDescentOptimizer(1)
+    optimizer = GradientDescentOptimizer(0.01)
     count = 0
     correct = 0
-    for line in np.loadtxt("data_toy_problem/data_dark_bright_training_20000.csv", delimiter=","):
+    for line in np.loadtxt("data_toy_problem/data_dark_bright_test_4000.csv", delimiter=","):
         target = line[0]
         input = np.asfarray(line[1:]) / 255
         output = evaluator.Evaluate(nn, input)
@@ -122,7 +124,7 @@ def main():
             targetVector = np.array([1,0])
         else:
             targetVector = np.array([0,1])
-        optimizer.Optimize(nn, output, targetVector)
+        # optimizer.Optimize(nn, output, targetVector)
 
 
     logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
