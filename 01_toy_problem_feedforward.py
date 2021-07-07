@@ -46,10 +46,22 @@ class Layer:
     """One layer in a neural network.
     It carries its neurons' input state and its input weights.
     """
-    def __init__(self, weights, state):
+    def __init__(self, weights, state, activation=sigmoid):
         self.weights = weights
         self.state = state
+        self.activation = activation
         assert weights.shape[1] == state.shape[0], "Expected compatible size: %s/%s" % (weights.shape, state.shape)
+
+    def Evaluate(self, input):
+        logger.debug("Input state: %s", input)
+        self.state = input
+        logger.debug("Weights: %s", self.weights)
+        state = np.dot(self.weights, input)
+        logger.debug("Output state after weights: %s", state)
+        state = self.activation(state)
+        logger.debug("Output state after activation: %s", state)
+        return state
+
 
 class NN:
     """A neural network."""
@@ -137,13 +149,7 @@ class ForwardEvaluator:
     def Evaluate(self, nn, input):
         state = input
         for layer in nn.layers:
-            logger.debug("Input state: %s", state)
-            layer.state = state
-            logger.debug("Weights: %s", layer.weights)
-            state = np.dot(layer.weights, state)
-            logger.debug("Output state after weights: %s", state)
-            state = nn.activation(state)
-            logger.debug("Output state after activation: %s", state)
+            state = layer.Evaluate(state)
         return state
 
 class GradientDescentOptimizer:
