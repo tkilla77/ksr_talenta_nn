@@ -30,6 +30,7 @@ flags.DEFINE_float('learningrate', 0.01, 'The learning rate')
 flags.DEFINE_boolean('train', False, 'Whether to train the model or only evaluate')
 flags.DEFINE_multi_integer('dim', [4,3,2], 'The dimensions of the NN, only used if no loadfile is given.')
 flags.DEFINE_integer('maxruns', 1000, 'The number of runs to execute.')
+flags.DEFINE_integer('reportingBatchSize', 1000, 'The number of evaluations after which to report.')
 flags.DEFINE_string('loglevel', 'INFO', 'logging level')
 
 
@@ -38,7 +39,7 @@ logger.setLevel(logging.INFO)
 
 def sigmoid(input):
     """The sigmoid function."""
-    return 1 / (1 + math.exp(-input))
+    return 1 / (1 + np.exp(-input))
 
 class Layer:
     """One layer in a neural network.
@@ -61,7 +62,7 @@ class NN:
         lastDim = dimensions[0]
         layers = []
         for dimension in dimensions[1:]:
-            layers.append(Layer(np.random.rand(dimension, lastDim), np.zeros(lastDim)))
+            layers.append(Layer(np.random.rand(dimension, lastDim) / 2, np.zeros(lastDim)))
             lastDim = dimension
         return NN(layers)
 
@@ -78,7 +79,7 @@ class NN:
         npzfile = np.load(file)
         layers = []
         for weights in sorted(npzfile.files):
-            logger.info("loading layer %s, %s", weights, npzfile[weights])
+            logger.debug("loading layer %s, %s", weights, npzfile[weights])
             layers.append(npzfile[weights])
         return NN.WithGivenWeights(layers)
 
@@ -93,12 +94,14 @@ class ForwardEvaluator:
         self.optimizer = optimizer
 
     """Forward-evaluates a neural network."""
-    def EvalLoop(self, nn, maxruns, input):
+    def EvalLoop(self, nn, maxruns, input, reportingBatchSize = 100):
         count = 0
         correct = 0
+        batchCorrect = 0
         for line in input:
             if count == maxruns:
                 break
+
             target = line['target']
             input = line['input']
             output = self.Evaluate(nn, input)
@@ -107,17 +110,24 @@ class ForwardEvaluator:
 
             targetVector = np.zeros(output.size)
             targetVector[target] = 1
-            logger.info("Target: %s", target)
-            logger.info("Target vector: %s", targetVector)
+            logger.debug("Target: %s", target)
+            logger.debug("Target vector: %s", targetVector)
 
             outputScalar = np.where(output == max(output))[0][0]
-            logger.info("Output: %s", output)
-            logger.info("Output scalar: %s", outputScalar)
+            logger.debug("Output: %s", output)
+            logger.debug("Output scalar: %s", outputScalar)
 
             if target == outputScalar:
                 correct += 1
             if self.optimizer:
                 self.optimizer.Optimize(nn, output, targetVector)
+            
+            if count % reportingBatchSize == 0:
+                batchSuccess = correct - batchCorrect
+                batchRate = batchSuccess * 100.0 / reportingBatchSize
+                overallRate = correct * 100.0 / count
+                logger.info("Batch (%d) / Overall success rate: %.1f%% / %.1f%%", count / reportingBatchSize, batchRate, overallRate)
+                batchCorrect = correct
 
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
 
@@ -129,7 +139,7 @@ class ForwardEvaluator:
             logger.debug("Weights: %s", layer.weights)
             state = np.dot(layer.weights, state)
             logger.debug("Output state after weights: %s", state)
-            state = np.array([nn.activation(i) for i in state])
+            state = nn.activation(state)
             logger.debug("Output state after activation: %s", state)
         return state
 
@@ -143,7 +153,6 @@ class GradientDescentOptimizer:
 
     def Optimize(self, nn, output, target):
         error = self.Cost(output, target)
-        logger.info("Error is: %s", error)
         
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
@@ -160,6 +169,10 @@ class GradientDescentOptimizer:
             error = next_error
 
 def readCsvLines255(filename):
+    """
+    Reads CSV lines and divides input values by 255.
+    Returns a dictionary with entries 'target' and 'input'.
+    """
     for row in open(filename, "r"):
         split = row.split(",")
         target = int(split[0])
@@ -182,7 +195,7 @@ def main(argv):
     else:
         evaluator = ForwardEvaluator()
     
-    evaluator.EvalLoop(nn, FLAGS.maxruns, readCsvLines255(FLAGS.datafile))
+    evaluator.EvalLoop(nn, FLAGS.maxruns, readCsvLines255(FLAGS.datafile), FLAGS.reportingBatchSize)
 
     if FLAGS.savefile:
         nn.Store(FLAGS.savefile)
