@@ -1,3 +1,19 @@
+"""
+Usage:
+Training: train a new network from scratch
+
+$ python3 01_toy_problem_feedforward.py --dim 4 --dim 3 --dim 2 \
+    --savefile toy_network.nn.npz \
+    --datafile data_toy_problem/data_dark_bright_training_20000.csv \
+    --train --learningrate 0.01 --maxruns 20000
+
+Eval:
+$ python3 01_toy_problem_feedforward.py \
+    --loadfile toy_network.nn.npz \
+    --datafile data_toy_problem/data_dark_bright_test_4000.csv \
+    --maxruns 4000
+
+"""
 import numpy as np
 import math
 import logging
