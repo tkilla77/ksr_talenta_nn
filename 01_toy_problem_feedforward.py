@@ -2,14 +2,21 @@ import numpy as np
 import math
 import logging
 
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('datafile', '', 'The input data file in CSV format.')
+flags.DEFINE_string('loadfile', '', 'The file to read weights from. If not given, use random weights')
+flags.DEFINE_string('savefile', '', 'The file to store the network weights. If not given, nothing is saved')
+flags.DEFINE_float('learningrate', 0.01, 'The learning rate')
+flags.DEFINE_boolean('train', False, 'Whether to train the model or only evaluate')
+flags.DEFINE_multi_integer('dim', [4,3,2], 'The dimensions of the NN, only used if no loadfile is given.')
+
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-
 
 def sigmoid(input):
     """The sigmoid function."""
@@ -26,26 +33,71 @@ class Layer:
 
 class NN:
     """A neural network."""
-    def __init__(self):
+    def __init__(self, layers):
         self.activation = sigmoid
-        self.layers = []
+        self.layers = layers
+        logger.info("New NN with shape: %s", [l.state.size for l in self.layers])
 
-    def SetRandomWeights(self, dimensions):
+    @staticmethod
+    def WithRandomWeights(dimensions):
         lastDim = dimensions[0]
-        self.layers = []
+        layers = []
         for dimension in dimensions[1:]:
-            self.layers.append(Layer(np.random.rand(dimension, lastDim), np.zeros(lastDim)))
+            layers.append(Layer(np.random.rand(dimension, lastDim), np.zeros(lastDim)))
             lastDim = dimension
+        return NN(layers)
 
-    def SetWeights(self, weights):
-        logger.info("SetWeights: old shape: %s", [l.state.size for l in self.layers])
-        self.layers = []
+    @staticmethod
+    def WithGivenWeights(weights):
+        layers = []
         for newweights in weights:
-            self.layers.append(Layer(newweights, np.zeros(newweights.shape[1])))
-        logger.info("New shape: %s", [l.state.size for l in self.layers])
+            layers.append(Layer(newweights, np.zeros(newweights.shape[1])))
+        return NN(layers)
+
+    @staticmethod
+    def LoadFromFile(file):
+        """Loads a NN from file."""
+        npzfile = np.load(file)
+        layers = []
+        for weights in sorted(npzfile.files):
+            logger.info("loading layer %s, %s", weights, npzfile[weights])
+            layers.append(npzfile[weights])
+        return NN.WithGivenWeights(layers)
+
+    def Store(self, file):
+        """Stores a NN to file."""
+        arrays = [layer.weights for layer in self.layers]
+        np.savez(file, *arrays)        
+
 
 class ForwardEvaluator:
+    def __init__(self, optimizer = None):
+        self.optimizer = optimizer
+
     """Forward-evaluates a neural network."""
+    def EvalLoop(self, nn, input):
+        count = 0
+        correct = 0
+        for line in input:
+            target = int(line[0])
+            input = np.asfarray(line[1:]) / 255
+            output = self.Evaluate(nn, input)
+            logger.debug("Input: %s Output: %s", input, output)
+            count += 1
+
+            targetVector = np.zeros(output.size)
+            targetVector[target] = 1
+
+            outputScalar = np.where(output == max(output))[0][0]
+            logger.debug("Output: %s", output)
+            logger.debug("Output scalar: %s", outputScalar)
+
+            if target == outputScalar:
+                correct += 1
+            if self.optimizer:
+                self.optimizer.Optimize(nn, output, targetVector)
+        logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
+
     def Evaluate(self, nn, input):
         state = input
         for layer in nn.layers:
@@ -80,54 +132,25 @@ class GradientDescentOptimizer:
             error = next_error
 
 
-class NetworkIO:
-    """Loads and stores NNs"""
-    @staticmethod
-    def Store(file, nn):
-        """Stores a NN to file."""
-        arrays = [layer.weights for layer in nn.layers]
-        np.savez(file, *arrays)
-
-    @staticmethod
-    def Load(file):
-        """Loads a NN from file."""
-        npzfile = np.load(file)
-        layers = []
-        for weights in sorted(npzfile.files):
-            logger.info("loading layer %s, %s", weights, npzfile[weights])
-            layers.append(npzfile[weights])
-        nn = NN()
-        nn.SetWeights(layers)
-        return nn
-        
-
-def main():
-    nn = NetworkIO.Load("toy_network.nn.npz")
-    # nn = NN()
-    # nn.SetRandomWeights([4,3,2])
-    # nn.SetWeights([np.array([[-0.3, -0.7, -0.9,-0.9],[-1,-0.6,-0.6, -0.6],[0.8, 0.5, 0.7, 0.8]]),
+def main(argv):
+    # nn = NN.WithRandomWeights([4,3,2])
+    # nn = NN.WithGivenWeights([np.array([[-0.3, -0.7, -0.9,-0.9],[-1,-0.6,-0.6, -0.6],[0.8, 0.5, 0.7, 0.8]]),
     #                np.array([[2.6, 2.1, -1.2],[-2.3, -2.3, 1.1]])])
+    if FLAGS.loadfile:
+        nn = NN.LoadFromFile(FLAGS.loadfile)
+    else:
+        nn = NN.WithRandomWeights(FLAGS.dim)
+    
 
-    evaluator = ForwardEvaluator()
-    optimizer = GradientDescentOptimizer(0.01)
-    count = 0
-    correct = 0
-    for line in np.loadtxt("data_toy_problem/data_dark_bright_test_4000.csv", delimiter=","):
-        target = line[0]
-        input = np.asfarray(line[1:]) / 255
-        output = evaluator.Evaluate(nn, input)
-        logger.debug("Input: %s Output: %s", input, output)
-        count += 1
-        if target == (output[0] < output[1]):
-            correct += 1
-        if target == 0:
-            targetVector = np.array([1,0])
-        else:
-            targetVector = np.array([0,1])
-        # optimizer.Optimize(nn, output, targetVector)
+    if FLAGS.train:
+        evaluator = ForwardEvaluator(GradientDescentOptimizer(FLAGS.learningrate))
+    else:
+        evaluator = ForwardEvaluator()
+    
+    evaluator.EvalLoop(nn, np.loadtxt(FLAGS.datafile, delimiter=","))
 
+    if FLAGS.savefile:
+        nn.Store(FLAGS.savefile)
 
-    logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
-    NetworkIO.Store("toy_network.nn", nn)
-
-main()
+if __name__ == '__main__':
+  app.run(main)
