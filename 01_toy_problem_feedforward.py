@@ -51,6 +51,9 @@ class Layer:
         self.state = state
         self.activation = activation
         assert weights.shape[1] == state.shape[0], "Expected compatible size: %s/%s" % (weights.shape, state.shape)
+    
+    def __str__(self) -> str:
+        return "FC: %s" % str(self.weights.shape[::-1])
 
     def Evaluate(self, input):
         logger.debug("Input state: %s", input)
@@ -62,13 +65,12 @@ class Layer:
         logger.debug("Output state after activation: %s", state)
         return state
 
-
 class NN:
     """A neural network."""
     def __init__(self, layers):
         self.activation = sigmoid
         self.layers = layers
-        logger.info("New NN with shape: %s", [l.state.size for l in self.layers])
+        logger.info("New NN with shape: %s", [str(l) for l in self.layers])
 
     @staticmethod
     def WithRandomWeights(dimensions):
@@ -122,7 +124,7 @@ class ForwardEvaluator:
             input = line['input']
             output = self.Evaluate(nn, input)
 
-            # Target value for classification problem is a unit vector.
+            # Target value for classification problem is a one hot vector.
             targetVector = np.zeros(output.size)
             targetVector[target] = 1
 
