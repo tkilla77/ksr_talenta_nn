@@ -105,26 +105,24 @@ class ForwardEvaluator:
             if count == maxruns:
                 break
 
+            count += 1
             target = line['target']
             input = line['input']
             output = self.Evaluate(nn, input)
-            logger.debug("Input: %s Output: %s", input, output)
-            count += 1
 
+            # Target value for classification problem is a unit vector.
             targetVector = np.zeros(output.size)
             targetVector[target] = 1
-            logger.debug("Target: %s", target)
-            logger.debug("Target vector: %s", targetVector)
 
+            # Choose an arbitrary index with the highest activation as the output.
             outputScalar = np.where(output == max(output))[0][0]
-            logger.debug("Output: %s", output)
-            logger.debug("Output scalar: %s", outputScalar)
 
             if target == outputScalar:
                 correct += 1
             if self.optimizer:
                 batchError += self.optimizer.Optimize(nn, output, targetVector)
             
+            # Report a few quality stats each batch.
             if count % reportingBatchSize == 0:
                 batchSuccess = correct - batchCorrect
                 batchRate = batchSuccess * 100.0 / reportingBatchSize
@@ -158,23 +156,25 @@ class GradientDescentOptimizer:
 
     def Optimize(self, nn, output, target):
         error = self.Cost(output, target)
-        last_error = np.linalg.norm(error)
+        output_error = np.linalg.norm(error)
         
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
+            # Store the error we will forward to the next layer.
             next_error = np.dot(layer.weights.T, error)
-            term = (error * output * (1-output)).reshape(-1,1)
+            # The inner term of the gradient.
+            term = np.atleast_2d(error * output * (1-output)).T
             logger.debug("Gradient term shape: %s", term.shape)
-            state_T = layer.state.reshape(1,-1)
+            state_T = np.atleast_2d(layer.state)
             logger.debug("State shape is: %s", state_T.shape)
-            gradient = np.dot(term, state_T)
-            logger.debug("Gradient is: %s", gradient)
-            logger.debug("Increment is: %s", -1 * self.learning_rate * gradient)
-            layer.weights = layer.weights + self.learning_rate * gradient
+            gradient = -1 * np.dot(term, state_T)
+            logger.debug("Gradient is: %s", gradient.shape)
+            logger.debug("Increment is: %s", self.learning_rate * gradient)
+            layer.weights = layer.weights - self.learning_rate * gradient
             output = layer.state
             error = next_error
 
-        return last_error
+        return output_error
 
 def readCsvLines255(filename):
     """
