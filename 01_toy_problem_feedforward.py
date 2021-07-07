@@ -80,29 +80,28 @@ class ForwardEvaluator:
     def EvalLoop(self, nn, maxruns, input):
         count = 0
         correct = 0
-        while count < maxruns:
-            for line in input:
-                if count == maxruns:
-                    break
-                target = int(line[0])
-                input = np.asfarray(line[1:]) / 255
-                output = self.Evaluate(nn, input)
-                logger.debug("Input: %s Output: %s", input, output)
-                count += 1
+        for line in input:
+            if count == maxruns:
+                break
+            target = line['target']
+            input = line['input']
+            output = self.Evaluate(nn, input)
+            logger.debug("Input: %s Output: %s", input, output)
+            count += 1
 
-                targetVector = np.zeros(output.size)
-                targetVector[target] = 1
-                logger.info("Target: %s", target)
-                logger.info("Target vector: %s", targetVector)
+            targetVector = np.zeros(output.size)
+            targetVector[target] = 1
+            logger.info("Target: %s", target)
+            logger.info("Target vector: %s", targetVector)
 
-                outputScalar = np.where(output == max(output))[0][0]
-                logger.info("Output: %s", output)
-                logger.info("Output scalar: %s", outputScalar)
+            outputScalar = np.where(output == max(output))[0][0]
+            logger.info("Output: %s", output)
+            logger.info("Output scalar: %s", outputScalar)
 
-                if target == outputScalar:
-                    correct += 1
-                if self.optimizer:
-                    self.optimizer.Optimize(nn, output, targetVector)
+            if target == outputScalar:
+                correct += 1
+            if self.optimizer:
+                self.optimizer.Optimize(nn, output, targetVector)
 
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
 
@@ -128,6 +127,7 @@ class GradientDescentOptimizer:
 
     def Optimize(self, nn, output, target):
         error = self.Cost(output, target)
+        logger.info("Error is: %s", error)
         
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
@@ -143,6 +143,12 @@ class GradientDescentOptimizer:
             output = layer.state
             error = next_error
 
+def readCsvLines255(filename):
+    for row in open(filename, "r"):
+        split = row.split(",")
+        target = int(split[0])
+        input =  np.asfarray(split[1:]) / 255
+        yield {'target': target, 'input': input}
 
 def main(argv):
     logger.setLevel(FLAGS.loglevel)
@@ -160,7 +166,7 @@ def main(argv):
     else:
         evaluator = ForwardEvaluator()
     
-    evaluator.EvalLoop(nn, FLAGS.maxruns, np.loadtxt(FLAGS.datafile, delimiter=","))
+    evaluator.EvalLoop(nn, FLAGS.maxruns, readCsvLines255(FLAGS.datafile))
 
     if FLAGS.savefile:
         nn.Store(FLAGS.savefile)
