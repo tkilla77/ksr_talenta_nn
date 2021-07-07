@@ -1,5 +1,6 @@
 """
 Usage:
+
 Training: train a new network from scratch
 
 $ python3 01_toy_problem_feedforward.py --dim 4 --dim 3 --dim 2 \
@@ -129,7 +130,7 @@ class ForwardEvaluator:
                 batchRate = batchSuccess * 100.0 / reportingBatchSize
                 overallRate = correct * 100.0 / count
                 avgError = batchError / reportingBatchSize
-                logger.info("Batch (%d): Avg error / Success rate / Overall success rate: %.3f / %.1f%% / %.1f%%", count / reportingBatchSize, avgError, batchRate, overallRate)
+                logger.info("Batch (%d): Avg error / Success rate / Overall: %.3f / %.1f%% / %.1f%%", count / reportingBatchSize, avgError, batchRate, overallRate)
                 batchError = 0.0
                 batchCorrect = correct
 
