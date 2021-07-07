@@ -92,10 +92,12 @@ class ForwardEvaluator:
 
                 targetVector = np.zeros(output.size)
                 targetVector[target] = 1
+                logger.info("Target: %s", target)
+                logger.info("Target vector: %s", targetVector)
 
                 outputScalar = np.where(output == max(output))[0][0]
-                logger.debug("Output: %s", output)
-                logger.debug("Output scalar: %s", outputScalar)
+                logger.info("Output: %s", output)
+                logger.info("Output scalar: %s", outputScalar)
 
                 if target == outputScalar:
                     correct += 1
@@ -107,9 +109,13 @@ class ForwardEvaluator:
     def Evaluate(self, nn, input):
         state = input
         for layer in nn.layers:
+            logger.debug("Input state: %s", state)
             layer.state = state
+            logger.debug("Weights: %s", layer.weights)
             state = np.dot(layer.weights, state)
+            logger.debug("Output state after weights: %s", state)
             state = np.array([nn.activation(i) for i in state])
+            logger.debug("Output state after activation: %s", state)
         return state
 
 class GradientDescentOptimizer:
