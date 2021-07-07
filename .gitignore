@@ -1,6 +1,4 @@
 data_mnist/mnist_test.csv
 data_mnist/mnist_train.csv
-mnist_network.nn.npz
-toy_network.nn.npz
+*.npz
 .DS_Store
-toy_network.nn.npz
