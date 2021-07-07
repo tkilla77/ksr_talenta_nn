@@ -13,6 +13,8 @@ flags.DEFINE_string('savefile', '', 'The file to store the network weights. If n
 flags.DEFINE_float('learningrate', 0.01, 'The learning rate')
 flags.DEFINE_boolean('train', False, 'Whether to train the model or only evaluate')
 flags.DEFINE_multi_integer('dim', [4,3,2], 'The dimensions of the NN, only used if no loadfile is given.')
+flags.DEFINE_integer('maxruns', 1000, 'The number of runs to execute.')
+flags.DEFINE_string('loglevel', 'INFO', 'logging level')
 
 
 logger = logging.getLogger(__name__)
@@ -75,27 +77,31 @@ class ForwardEvaluator:
         self.optimizer = optimizer
 
     """Forward-evaluates a neural network."""
-    def EvalLoop(self, nn, input):
+    def EvalLoop(self, nn, maxruns, input):
         count = 0
         correct = 0
-        for line in input:
-            target = int(line[0])
-            input = np.asfarray(line[1:]) / 255
-            output = self.Evaluate(nn, input)
-            logger.debug("Input: %s Output: %s", input, output)
-            count += 1
+        while count < maxruns:
+            for line in input:
+                if count == maxruns:
+                    break
+                target = int(line[0])
+                input = np.asfarray(line[1:]) / 255
+                output = self.Evaluate(nn, input)
+                logger.debug("Input: %s Output: %s", input, output)
+                count += 1
 
-            targetVector = np.zeros(output.size)
-            targetVector[target] = 1
+                targetVector = np.zeros(output.size)
+                targetVector[target] = 1
 
-            outputScalar = np.where(output == max(output))[0][0]
-            logger.debug("Output: %s", output)
-            logger.debug("Output scalar: %s", outputScalar)
+                outputScalar = np.where(output == max(output))[0][0]
+                logger.debug("Output: %s", output)
+                logger.debug("Output scalar: %s", outputScalar)
 
-            if target == outputScalar:
-                correct += 1
-            if self.optimizer:
-                self.optimizer.Optimize(nn, output, targetVector)
+                if target == outputScalar:
+                    correct += 1
+                if self.optimizer:
+                    self.optimizer.Optimize(nn, output, targetVector)
+
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
 
     def Evaluate(self, nn, input):
@@ -133,6 +139,7 @@ class GradientDescentOptimizer:
 
 
 def main(argv):
+    logger.setLevel(FLAGS.loglevel)
     # nn = NN.WithRandomWeights([4,3,2])
     # nn = NN.WithGivenWeights([np.array([[-0.3, -0.7, -0.9,-0.9],[-1,-0.6,-0.6, -0.6],[0.8, 0.5, 0.7, 0.8]]),
     #                np.array([[2.6, 2.1, -1.2],[-2.3, -2.3, 1.1]])])
@@ -147,7 +154,7 @@ def main(argv):
     else:
         evaluator = ForwardEvaluator()
     
-    evaluator.EvalLoop(nn, np.loadtxt(FLAGS.datafile, delimiter=","))
+    evaluator.EvalLoop(nn, FLAGS.maxruns, np.loadtxt(FLAGS.datafile, delimiter=","))
 
     if FLAGS.savefile:
         nn.Store(FLAGS.savefile)
