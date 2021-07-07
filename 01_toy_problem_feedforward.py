@@ -98,6 +98,8 @@ class ForwardEvaluator:
         count = 0
         correct = 0
         batchCorrect = 0
+        batchError = 0.0
+
         for line in input:
             if count == maxruns:
                 break
@@ -120,13 +122,15 @@ class ForwardEvaluator:
             if target == outputScalar:
                 correct += 1
             if self.optimizer:
-                self.optimizer.Optimize(nn, output, targetVector)
+                batchError += self.optimizer.Optimize(nn, output, targetVector)
             
             if count % reportingBatchSize == 0:
                 batchSuccess = correct - batchCorrect
                 batchRate = batchSuccess * 100.0 / reportingBatchSize
                 overallRate = correct * 100.0 / count
-                logger.info("Batch (%d) / Overall success rate: %.1f%% / %.1f%%", count / reportingBatchSize, batchRate, overallRate)
+                avgError = batchError / reportingBatchSize
+                logger.info("Batch (%d): Avg error / Success rate / Overall success rate: %.3f / %.1f%% / %.1f%%", count / reportingBatchSize, avgError, batchRate, overallRate)
+                batchError = 0.0
                 batchCorrect = correct
 
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
@@ -153,6 +157,7 @@ class GradientDescentOptimizer:
 
     def Optimize(self, nn, output, target):
         error = self.Cost(output, target)
+        last_error = np.linalg.norm(error)
         
         for layer in reversed(nn.layers):
             logger.debug("Error is: %s", error)
@@ -167,6 +172,8 @@ class GradientDescentOptimizer:
             layer.weights = layer.weights + self.learning_rate * gradient
             output = layer.state
             error = next_error
+
+        return last_error
 
 def readCsvLines255(filename):
     """
