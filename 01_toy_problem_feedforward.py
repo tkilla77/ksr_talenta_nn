@@ -56,14 +56,14 @@ class Layer:
         return "FC: %s" % str(self.weights.shape[::-1])
 
     def Evaluate(self, input):
-        logger.debug("Input state: %s", input)
+        logger.debug("Input state: %s", input.shape)
         self.state = input
-        logger.debug("Weights: %s", self.weights)
-        state = np.dot(self.weights, input)
-        logger.debug("Output state after weights: %s", state)
-        state = self.activation(state)
-        logger.debug("Output state after activation: %s", state)
-        return state
+        logger.debug("Weights: %s", self.weights.shape)
+        output = np.dot(self.weights, input)
+        logger.debug("Output state after weights: %s", output.shape)
+        output = self.activation(output)
+        logger.debug("Output state after activation: %s", output.shape)
+        return output
 
 class NN:
     """A neural network."""
@@ -77,7 +77,7 @@ class NN:
         lastDim = dimensions[0]
         layers = []
         for dimension in dimensions[1:]:
-            layers.append(Layer(np.random.rand(dimension, lastDim) / 2, np.zeros(lastDim)))
+            layers.append(Layer(np.random.rand(dimension, lastDim) - 0.5, np.zeros(lastDim)))
             lastDim = dimension
         return NN(layers)
 
@@ -121,28 +121,28 @@ class ForwardEvaluator:
 
             count += 1
             target = line['target']
-            input = line['input']
+            input = line['input'].reshape((-1,1))
             output = self.Evaluate(nn, input)
 
-            # Target value for classification problem is a one hot vector.
-            targetVector = np.zeros(output.size)
-            targetVector[target] = 1
-
             # Choose an arbitrary index with the highest activation as the output.
-            outputScalar = np.where(output == max(output))[0][0]
+            outputScalar = np.argmax(output)
 
             if target == outputScalar:
                 correct += 1
             if self.optimizer:
+                # Target value for classification problem is a one hot vector.
+                targetVector = np.zeros(output.size)
+                targetVector[target] = 1
+                targetVector = targetVector.reshape((-1, 1))
                 batchError += self.optimizer.Optimize(nn, output, targetVector)
             
             # Report a few quality stats each batch.
             if count % reportingBatchSize == 0:
                 batchSuccess = correct - batchCorrect
-                batchRate = batchSuccess * 100.0 / reportingBatchSize
-                overallRate = correct * 100.0 / count
+                batchRate = batchSuccess / reportingBatchSize
+                overallRate = correct / count
                 avgError = batchError / reportingBatchSize
-                logger.info("Batch (%d): Avg error / Success rate / Overall: %.3f / %.1f%% / %.1f%%", count / reportingBatchSize, avgError, batchRate, overallRate)
+                logger.info(f"Batch ({count / reportingBatchSize:n}): Avg error / Batch Acc / Overall Acc: {avgError:.3} / {batchRate:.1%} / {overallRate:.1%}")
                 batchError = 0.0
                 batchCorrect = correct
 
@@ -167,18 +167,17 @@ class GradientDescentOptimizer:
         output_error = np.linalg.norm(error)
         
         for layer in reversed(nn.layers):
-            logger.debug("Error is: %s", error)
+            logger.debug("Error shape is: %s", error.shape)
             # Store the error we will forward to the next layer.
             next_error = np.dot(layer.weights.T, error)
             # The inner term of the gradient.
-            term = np.atleast_2d(error * output * (1-output)).T
+            term = (self.learning_rate * error * output * (1-output))
             logger.debug("Gradient term shape: %s", term.shape)
-            state_T = np.atleast_2d(layer.state)
+            state_T = layer.state.T
             logger.debug("State shape is: %s", state_T.shape)
-            gradient = -1 * np.dot(term, state_T)
-            logger.debug("Gradient is: %s", gradient.shape)
-            logger.debug("Increment is: %s", self.learning_rate * gradient)
-            layer.weights = layer.weights - self.learning_rate * gradient
+            gradient = np.dot(term, state_T)
+            logger.debug("Gradient shape is: %s", gradient.shape)
+            layer.weights = layer.weights + gradient
             output = layer.state
             error = next_error
 
