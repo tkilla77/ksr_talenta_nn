@@ -3,20 +3,19 @@ Usage:
 
 Training: train a new network from scratch
 
-$ python3 01_toy_problem_feedforward.py --dim 4 --dim 3 --dim 2 \
-    --savefile toy_network.nn.npz \
-    --datafile data_toy_problem/data_dark_bright_training_20000.csv \
+$ python3 neural_network.py --dim 784 --dim 20 --dim 10 \
+    --savefile mnist_20.nn.npz \
+    --datafile data_mnist/mnist_train.csv \
     --train --learningrate 0.01 --maxruns 20000
 
 Eval:
-$ python3 01_toy_problem_feedforward.py \
-    --loadfile toy_network.nn.npz \
-    --datafile data_toy_problem/data_dark_bright_test_4000.csv \
+$ python3 neural_network.py \
+    --loadfile mnist_20.nn.npz \
+    --datafile data_mnist/mnist_test.csv \
     --maxruns 4000
 
 """
 import numpy as np
-import math
 import logging
 
 from absl import app
@@ -46,30 +45,25 @@ class Layer:
     """One layer in a neural network.
     It carries its neurons' input state and its input weights.
     """
-    def __init__(self, weights, state, activation=sigmoid):
+    def __init__(self, weights, activation=sigmoid):
         self.weights = weights
-        self.state = state
+        self.state = None
         self.activation = activation
-        assert weights.shape[1] == state.shape[0], "Expected compatible size: %s/%s" % (weights.shape, state.shape)
     
     def __str__(self) -> str:
         return "FC: %s" % str(self.weights.shape[::-1])
 
     def Evaluate(self, input):
+        """A feed-forward pass in this layer, returning the layer's output."""
         assert self.weights.shape[1] == input.shape[0], "Expected compatible size: %s/%s" % (self.weights.shape, input.shape)
-        logger.debug("Input state: %s", input.shape)
+        # Store the input for backprop.
         self.state = input
-        logger.debug("Weights: %s", self.weights.shape)
-        output = np.dot(self.weights, input)
-        logger.debug("Output state after weights: %s", output.shape)
-        output = self.activation(output)
-        logger.debug("Output state after activation: %s", output.shape)
-        return output
+
+        return self.activation(np.dot(self.weights, input))
 
 class NN:
     """A neural network."""
     def __init__(self, layers):
-        self.activation = sigmoid
         self.layers = layers
         logger.info("New NN with shape: %s", [str(l) for l in self.layers])
 
@@ -78,7 +72,7 @@ class NN:
         lastDim = dimensions[0]
         layers = []
         for dimension in dimensions[1:]:
-            layers.append(Layer(np.random.rand(dimension, lastDim) - 0.5, np.zeros(lastDim)))
+            layers.append(Layer(np.random.rand(dimension, lastDim) - 0.5))
             lastDim = dimension
         return NN(layers)
 
@@ -86,7 +80,7 @@ class NN:
     def WithGivenWeights(weights):
         layers = []
         for newweights in weights:
-            layers.append(Layer(newweights, np.zeros(newweights.shape[1])))
+            layers.append(Layer(newweights))
         return NN(layers)
 
     @staticmethod
@@ -150,6 +144,7 @@ class ForwardEvaluator:
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
 
     def Evaluate(self, nn, input):
+        """A single feed-forward pass."""
         state = input
         for layer in nn.layers:
             state = layer.Evaluate(state)
@@ -169,11 +164,12 @@ class GradientDescentOptimizer:
         
         for layer in reversed(nn.layers):
             next_error = np.dot(layer.weights.T, error)
-            # The inner term of the gradient.
-            term = (self.learning_rate * error * output * (1-output))
-            state_T = layer.state.T
-            gradient = np.dot(term, state_T)
-            layer.weights = layer.weights + gradient
+
+            # Update this layer's weights.
+            gradient = np.dot(error * output * (1-output), layer.state.T)
+            layer.weights = layer.weights + self.learning_rate * gradient
+
+            # Move one network layer to the left.
             output = layer.state
             error = next_error
 
