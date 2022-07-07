@@ -56,6 +56,7 @@ class Layer:
         return "FC: %s" % str(self.weights.shape[::-1])
 
     def Evaluate(self, input):
+        assert self.weights.shape[1] == input.shape[0], "Expected compatible size: %s/%s" % (self.weights.shape, input.shape)
         logger.debug("Input state: %s", input.shape)
         self.state = input
         logger.debug("Weights: %s", self.weights.shape)
@@ -167,16 +168,11 @@ class GradientDescentOptimizer:
         output_error = np.linalg.norm(error)
         
         for layer in reversed(nn.layers):
-            logger.debug("Error shape is: %s", error.shape)
-            # Store the error we will forward to the next layer.
             next_error = np.dot(layer.weights.T, error)
             # The inner term of the gradient.
             term = (self.learning_rate * error * output * (1-output))
-            logger.debug("Gradient term shape: %s", term.shape)
             state_T = layer.state.T
-            logger.debug("State shape is: %s", state_T.shape)
             gradient = np.dot(term, state_T)
-            logger.debug("Gradient shape is: %s", gradient.shape)
             layer.weights = layer.weights + gradient
             output = layer.state
             error = next_error
