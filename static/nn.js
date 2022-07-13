@@ -1,4 +1,4 @@
-// Adapted from https://stackoverflow.com/questions/22891827/how-do-i-hand-draw-on-canvas-with-javascript
+// Canvas drawing adapted from https://stackoverflow.com/questions/22891827/how-do-i-hand-draw-on-canvas-with-javascript
 
 let canvas = document.getElementById('sheet')
 let sent_image = document.getElementById('sent_image')
@@ -29,7 +29,9 @@ canvas.addEventListener("touchstart", draw("add","touchmove","touchend"));
 canvas.addEventListener("mouseup", draw("remove","mousemove","mouseup"));
 canvas.addEventListener("touchend", draw("remove","touchmove","touchend"));
 
+/** Scales the current canvas contents to 28x28 and sends the data to the server. */
 async function predict(canvas, history) {
+    // Create scaled-down version.
     let bitmap = await createImageBitmap(canvas, {
         resizeWidth: 28,
         resizeHeight: 28,
@@ -39,10 +41,12 @@ async function predict(canvas, history) {
     sent_image.width = 28;
     sent_image.height = 28;
 
+    // Create canvas for history.
     let ctx = sent_image.getContext("bitmaprenderer");
     ctx.transferFromImageBitmap(bitmap);
     bitmap.close();
-
+    
+    // Make request to prediction REST endpoint.
     let url = sent_image.toDataURL();
     let postOptions = {
         method: 'POST',
@@ -55,10 +59,13 @@ async function predict(canvas, history) {
         }),
     };
     let response = await fetch('/predict/mnist', postOptions);
+
     if (response.ok) {
         let json = await response.json();
         let prediction = json.prediction;
         let full_prediction = json.full_prediction;
+
+        // Add a history entry, discarding the oldest if necessary.
         let tbody = history.getElementsByTagName("tbody")[0]
         if (tbody.childNodes.length > 6) {
             tbody.removeChild(tbody.firstChild);
@@ -70,6 +77,9 @@ async function predict(canvas, history) {
         row.appendChild(im);
         im.appendChild(sent_image);
         row.appendChild(res);
+
+        // Add the full prediction values and shade the background
+        // according to the prediction value.
         for (let i of full_prediction) {
             full = document.createElement("td");
             full.innerText = i;
