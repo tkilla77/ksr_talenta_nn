@@ -17,7 +17,7 @@ def index():
     """Serves the default path and renders the basic HTML (+ CSS / JS)."""
     return render_template('nn.html')
 
-@app.route('/predict/mnist/', methods=['POST'])
+@app.route('/predict/mnist', methods=['POST'])
 def predict():
     """Predicts the written digit using a forward pass through a simple feed-forward neural network.
        Expects a request with a JSON payload of the following format:
