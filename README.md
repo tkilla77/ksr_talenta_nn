@@ -4,7 +4,7 @@ A simple dense neural network using only numpy for use in introductory ML classe
 See https://sca.ksr.ch/doku.php?id=talit:neuronale_netze_kurs for the accompanying materials.
 
 ## Training
-See neural_network.py: 
+See `neural_network.py`: 
 
 Train a new network from scratch:
 
@@ -34,6 +34,7 @@ python neural_network.py \
 ```
 
 # Serve
+See `app.py`.
 
 Serve a trained network and test with your own drawn digits. Note that the code expects to find the network in `mnist_best.npz`.
 
