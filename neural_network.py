@@ -43,7 +43,7 @@ def sigmoid(input):
 
 class Layer:
     """One layer in a neural network.
-    It carries its neurons' input state and its input weights.
+    It carries its neurons' input state and its output weights.
     """
     def __init__(self, weights, activation=sigmoid):
         self.weights = weights

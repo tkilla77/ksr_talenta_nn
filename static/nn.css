@@ -1,0 +1,25 @@
+body {
+    margin: 5em auto;
+    max-width: 30em;
+    font-family: sans-serif;
+}
+h1 {
+    font-size: 1.5em;
+}
+div#main {
+    display: flex;
+    flex-direction: row;
+    column-gap: 1em;
+}
+div#controls {
+    margin-block-start: 1em;
+}
+table, td, th {
+    border: 1px solid lightgray;
+    font-size: small;
+    font-family: monospace;
+    border-collapse: collapse;
+    height: fit-content;
+}
+table#history {
+}
