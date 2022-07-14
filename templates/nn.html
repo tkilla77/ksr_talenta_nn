@@ -8,18 +8,19 @@
   <body>
     <h1>MNIST Digit Recognition</h1>
     <div id="main">
-        <canvas id="sheet" width="280" height="280"></canvas>
+        <div id="left">
+          <canvas id="sheet" width="280" height="280"></canvas>
+          <div id="controls">
+              <button id="predict">Predict</button>
+              <button id="clear">Clear</button>
+          </div>
+        </div>
         <table id="history">
             <thead>
                 <tr><th></th><th>Pred</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr>
             </thead>
             <tbody></tbody>
         </table>
-
-    </div>
-    <div id="controls">
-        <button id="predict">Predict</button>
-        <button id="clear">Clear</button>
     </div>
   </body>
 </html>

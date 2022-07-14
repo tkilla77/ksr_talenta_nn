@@ -11,6 +11,9 @@ div#main {
     flex-direction: row;
     column-gap: 1em;
 }
+canvas#sheet {
+    height: 280px;
+}
 div#controls {
     margin-block-start: 1em;
 }
@@ -20,4 +23,7 @@ table, td, th {
     font-family: monospace;
     border-collapse: collapse;
     height: fit-content;
+}
+table#history th {
+    min-width: 4ch; /* precisions are 0.01 format */
 }

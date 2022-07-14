@@ -15,6 +15,7 @@ $ python3 neural_network.py \
     --maxruns 4000
 
 """
+import itertools
 import numpy as np
 import logging
 from PIL import Image
@@ -111,14 +112,14 @@ class ForwardEvaluator:
         batchCorrect = 0
         batchError = 0.0
 
-        for line in input:
+        for line in itertools.cycle(input):
             if count == maxruns:
                 break
 
             count += 1
             target = line['target']
             input = line['input']
-            input = random_transform(input)
+            input = random_transform(input, self.optimizer is None)
             output = self.Evaluate(nn, input)
 
             # Choose an arbitrary index with the highest activation as the output.
@@ -188,11 +189,13 @@ def readCsvLines255(filename):
         input =  np.asarray(split[1:], dtype=np.uint8)
         yield {'target': target, 'input': input}
 
-def random_transform(pixels, degrees=10, translation=5):
+def random_transform(pixels, eval=True, degrees=5, translation=5):
     """
     Randomly rotates the image by [-degrees,degrees] and move by translation pixels in a random direction.
     New pixels are filled with black.
     """
+    if eval:
+        return pixels.reshape(-1,1) / 255
     pixels = pixels.reshape(28,28)
     # mode 'L' means 8bit grayscale
     with Image.fromarray(pixels, mode="L") as image:

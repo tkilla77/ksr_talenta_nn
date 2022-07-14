@@ -67,7 +67,7 @@ async function predict(canvas, history) {
 
         // Add a history entry, discarding the oldest if necessary.
         let tbody = history.getElementsByTagName("tbody")[0]
-        if (tbody.childNodes.length > 6) {
+        if (tbody.childNodes.length > 9) {
             tbody.removeChild(tbody.firstChild);
         }
         row = document.createElement("tr");
