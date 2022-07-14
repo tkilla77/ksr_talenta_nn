@@ -17,6 +17,7 @@ $ python3 neural_network.py \
 """
 import numpy as np
 import logging
+from PIL import Image
 
 from absl import app
 from absl import flags
@@ -116,7 +117,8 @@ class ForwardEvaluator:
 
             count += 1
             target = line['target']
-            input = line['input'].reshape((-1,1))
+            input = line['input']
+            input = random_transform(input)
             output = self.Evaluate(nn, input)
 
             # Choose an arbitrary index with the highest activation as the output.
@@ -183,8 +185,24 @@ def readCsvLines255(filename):
     for row in open(filename, "r"):
         split = row.split(",")
         target = int(split[0])
-        input =  np.asfarray(split[1:]) / 255
+        input =  np.asarray(split[1:], dtype=np.uint8)
         yield {'target': target, 'input': input}
+
+def random_transform(pixels, degrees=10, translation=5):
+    """
+    Randomly rotates the image by [-degrees,degrees] and move by translation pixels in a random direction.
+    New pixels are filled with black.
+    """
+    pixels = pixels.reshape(28,28)
+    # mode 'L' means 8bit grayscale
+    with Image.fromarray(pixels, mode="L") as image:
+        angle = np.random.randint(-degrees, degrees+1)
+        x = np.random.randint(-translation, translation+1)
+        y = np.random.randint(-translation, translation+1)
+        move = (x,y)
+        transformed = image.rotate(angle=angle, resample=Image.Resampling.BICUBIC, translate=move, fillcolor=0)
+        pixel_data = transformed.getdata()
+        return np.array(pixel_data, dtype=np.float32).reshape(-1,1) / 255
 
 def main(argv):
     logger.setLevel(FLAGS.loglevel)
@@ -204,7 +222,7 @@ def main(argv):
     
     evaluator.EvalLoop(nn, FLAGS.maxruns, readCsvLines255(FLAGS.datafile), FLAGS.reportingBatchSize)
 
-    if FLAGS.savefile:
+    if FLAGS.savefile and FLAGS.train:
         nn.Store(FLAGS.savefile)
 
 if __name__ == '__main__':
