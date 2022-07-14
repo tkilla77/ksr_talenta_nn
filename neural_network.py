@@ -3,14 +3,15 @@ Usage:
 
 Training: train a new network from scratch
 
-$ python3 neural_network.py --dim 784 --dim 20 --dim 10 \
-    --savefile mnist_20.nn.npz \
+$ python neural_network.py --dim 784 --dim 100 --dim 50 --dim 10 \
+    --savefile mnist_best.npz \
     --datafile data_mnist/mnist_train.csv \
-    --train --learningrate 0.01 --maxruns 20000
+    --train --learningrate 0.02 --maxruns 400000
+
 
 Eval:
-$ python3 neural_network.py \
-    --loadfile mnist_20.nn.npz \
+$ python neural_network.py \
+    --loadfile mnist_best.npz \
     --datafile data_mnist/mnist_test.csv \
     --maxruns 4000
 
@@ -34,6 +35,8 @@ flags.DEFINE_multi_integer('dim', [4,3,2], 'The dimensions of the NN, only used 
 flags.DEFINE_integer('maxruns', 1000, 'The number of runs to execute.')
 flags.DEFINE_integer('reportingBatchSize', 1000, 'The number of evaluations after which to report.')
 flags.DEFINE_string('loglevel', 'INFO', 'logging level')
+flags.DEFINE_integer('rotate', '5', 'randomly rotate images by +/- so many degrees')
+flags.DEFINE_integer('translate', '5', 'randomly move images by +/- so many pixels in both axes')
 
 
 logger = logging.getLogger(__name__)
@@ -189,13 +192,19 @@ def readCsvLines255(filename):
         input =  np.asarray(split[1:], dtype=np.uint8)
         yield {'target': target, 'input': input}
 
-def random_transform(pixels, eval=True, degrees=5, translation=5):
+def random_transform(pixels, eval=True, degrees=None, translation=None):
     """
     Randomly rotates the image by [-degrees,degrees] and move by translation pixels in a random direction.
     New pixels are filled with black.
     """
     if eval:
         return pixels.reshape(-1,1) / 255
+    
+    if degrees is None:
+        degrees = FLAGS.rotate
+    if translation is None:
+        translation = FLAGS.translate
+        
     pixels = pixels.reshape(28,28)
     # mode 'L' means 8bit grayscale
     with Image.fromarray(pixels, mode="L") as image:
