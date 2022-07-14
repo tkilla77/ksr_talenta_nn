@@ -3,11 +3,7 @@ from PIL import Image
 import neural_network
 import numpy as np
 from io import BytesIO
-
 from flask import Flask, abort, render_template, request, jsonify
-
-# We need the following endpoint:
-# 1) predict: Takes image data and makes a single feed-forward pass, returning the predicted category
 
 app = Flask(__name__)
 app.secret_key = b'\x9c,\x9fHp\x045\xe9\xb9_\xd3s\xed\x03\xdb\x8d'
@@ -45,37 +41,35 @@ def predict():
     # 1: Open the image 
     image_response = urllib.request.urlopen(image_url)
     image_bytes = image_response.read()
-    image = Image.open(BytesIO(image_bytes))
+    with Image.open(BytesIO(image_bytes)) as image:
 
-    # 2: Convert to 8bit grayscale
-    # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.convert
-    # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
-    image = image.convert('L')
+        # 2: Convert to 8bit grayscale
+        # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.convert
+        # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
+        image = image.convert('L')
 
-    # 3: Ensure we have the expected size.
-    size = image.size
-    target_size = (28,28)
-    if size != target_size:
-        app.logger.warning(f"Resizing image from {size} to {target_size}")
-        image = image.resize(target_size)
-    
-    # 4: Get the pixel values and normalize from [0,255] to [0,1)
-    pixel_data = image.getdata()
-    assert len(pixel_data) == target_size[0] * target_size[1]
-    pixels = np.array(pixel_data) / 255
+        # 3: Ensure we have the expected size.
+        size = image.size
+        target_size = (28,28)
+        if size != target_size:
+            app.logger.warning(f"Resizing image from {size} to {target_size}")
+            image = image.resize(target_size)
+        
+        # 4: Get the pixel values and normalize from [0,255] to [0,1)
+        pixel_data = image.getdata()
+        assert len(pixel_data) == target_size[0] * target_size[1]
+        pixels = np.array(pixel_data) / 255
 
-    # 5: Feed-forward through network
-    nn = neural_network.NN.LoadFromFile('mnist_best.npz')
-    eval =  neural_network.ForwardEvaluator()
-    prediction = eval.Evaluate(nn, pixels)
+        # 5: Feed-forward through network
+        nn = neural_network.NN.LoadFromFile('mnist_best.npz')
+        eval =  neural_network.ForwardEvaluator()
+        prediction = eval.Evaluate(nn, pixels)
 
-    # 6: Formulate response.
-    digit = int(np.argmax(prediction))
-    full = np.round(prediction, 2)
-    return jsonify({
-        'label': 'mnist_digits_v1',
-        'prediction': digit,
-        'full_prediction': full.tolist(),
-    })
-
-
+        # 6: Formulate response.
+        digit = int(np.argmax(prediction))
+        full = np.round(prediction, 2)
+        return jsonify({
+            'label': 'mnist_digits_v1',
+            'prediction': digit,
+            'full_prediction': full.tolist(),
+        })
