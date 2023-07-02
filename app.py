@@ -73,3 +73,6 @@ def predict():
             'prediction': digit,
             'full_prediction': full.tolist(),
         })
+    
+if __name__ == '__main__':
+    app.run()
