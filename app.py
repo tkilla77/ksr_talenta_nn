@@ -2,6 +2,7 @@ import urllib
 from PIL import Image
 import neural_network
 import numpy as np
+import glob, os
 from io import BytesIO
 from flask import Flask, abort, render_template, request, jsonify
 
@@ -12,6 +13,12 @@ app.secret_key = b'\x9c,\x9fHp\x045\xe9\xb9_\xd3s\xed\x03\xdb\x8d'
 def index():
     """Serves the default path and renders the basic HTML (+ CSS / JS)."""
     return render_template('nn.html')
+
+@app.route('/list/mnist')
+def models():
+    models = glob.glob('*.npz')
+    names = [os.path.splitext(os.path.basename(m))[0] for m in models]
+    return names
 
 @app.route('/predict/mnist', methods=['POST'])
 def predict():
