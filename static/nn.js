@@ -1,7 +1,6 @@
 // Canvas drawing adapted from https://stackoverflow.com/questions/22891827/how-do-i-hand-draw-on-canvas-with-javascript
 
 let canvas = document.getElementById('sheet')
-let sent_image = document.getElementById('sent_image')
 let g = canvas.getContext("2d");
 
 g.fillStyle = "black";
@@ -37,7 +36,7 @@ async function predict(canvas, model, history) {
         resizeHeight: 28,
         resizeQuality: 'medium',
     });
-    sent_image = document.createElement("canvas");
+    let sent_image = document.createElement("canvas");
     sent_image.width = 28;
     sent_image.height = 28;
 
@@ -72,6 +71,17 @@ async function predict(canvas, model, history) {
         }
         row = document.createElement("tr");
         im = document.createElement("td");
+        im.addEventListener("click", async e => {
+            let bitmap = await createImageBitmap(sent_image, {
+                resizeWidth: 280,
+                resizeHeight: 280,
+                resizeQuality: 'medium',
+            });
+            let ctx = canvas.getContext("2d");
+            ctx.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            ctx.close();
+        });
         res = document.createElement("td");
         res.innerText = prediction
         row.appendChild(im);
