@@ -54,7 +54,7 @@ async function predict(canvas, model, history) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            label: 'mnist_best',
+            label: model,
             data: url,
         }),
     };
