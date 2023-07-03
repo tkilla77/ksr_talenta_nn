@@ -34,7 +34,9 @@ def predict():
 
     # Ensure we agree on the version and that the image URL uses the data scheme.
     request_json = request.get_json()
-    assert request_json['label'] == 'mnist_digits_v1'
+    model = request_json['label']
+    model_file = f"{model}.npz"
+    assert np.DataSource().exists(model_file)
     image_url = request_json['data']
     assert image_url.startswith('data:image/')
 
@@ -61,7 +63,7 @@ def predict():
         pixels = np.array(pixel_data) / 255
 
         # 5: Feed-forward through network
-        nn = neural_network.NN.LoadFromFile('mnist_best.npz')
+        nn = neural_network.NN.LoadFromFile(model_file)
         eval =  neural_network.ForwardEvaluator()
         prediction = eval.Evaluate(nn, pixels)
 
