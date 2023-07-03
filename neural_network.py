@@ -19,7 +19,7 @@ $ python neural_network.py \
 import itertools
 import numpy as np
 import logging
-from PIL import Image
+from PIL import Image, ImageOps
 
 from absl import app
 from absl import flags
@@ -37,6 +37,7 @@ flags.DEFINE_integer('reportingBatchSize', 1000, 'The number of evaluations afte
 flags.DEFINE_string('loglevel', 'INFO', 'logging level')
 flags.DEFINE_integer('rotate', '5', 'randomly rotate images by +/- so many degrees')
 flags.DEFINE_integer('translate', '5', 'randomly move images by +/- so many pixels in both axes')
+flags.DEFINE_float('none_mirrors', 0.1, 'Percentage of samples to mirror by 45 degrees and train as NaNs')
 
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ class ForwardEvaluator:
             count += 1
             target = line['target']
             input = line['input']
-            input = random_transform(input, self.optimizer is None)
+            target, input = random_transform(target, input, self.optimizer is None)
             output = self.Evaluate(nn, input)
 
             # Choose an arbitrary index with the highest activation as the output.
@@ -192,29 +193,37 @@ def readCsvLines255(filename):
         input =  np.asarray(split[1:], dtype=np.uint8)
         yield {'target': target, 'input': input}
 
-def random_transform(pixels, eval=True, degrees=None, translation=None):
+def random_transform(target, pixels, eval=True, degrees=None, translation=None, produce_nans=None):
     """
     Randomly rotates the image by [-degrees,degrees] and move by translation pixels in a random direction.
     New pixels are filled with black.
     """
     if eval:
-        return pixels.reshape(-1,1) / 255
+        return target, pixels.reshape(-1,1) / 255
     
     if degrees is None:
         degrees = FLAGS.rotate
     if translation is None:
         translation = FLAGS.translate
-        
-    pixels = pixels.reshape(28,28)
+    if produce_nans is None:
+        produce_nans = FLAGS.none_mirrors
+    
     # mode 'L' means 8bit grayscale
+    pixels = pixels.reshape(28,28)
     with Image.fromarray(pixels, mode="L") as image:
-        angle = np.random.randint(-degrees, degrees+1)
+        # Inject NaNs for a fraction of the samples
+        if np.random.random() < produce_nans:
+            target = 10
+            image = ImageOps.mirror(image)
+            angle=np.random.choice([-60, 60])
+        else:
+            angle = np.random.randint(-degrees, degrees+1)
         x = np.random.randint(-translation, translation+1)
         y = np.random.randint(-translation, translation+1)
         move = (x,y)
         transformed = image.rotate(angle=angle, resample=Image.Resampling.NEAREST, translate=move, fillcolor=0)
         pixel_data = transformed.getdata()
-        return np.array(pixel_data, dtype=np.float32).reshape(-1,1) / 255
+        return target, np.array(pixel_data, dtype=np.float32).reshape(-1,1) / 255
 
 def main(argv):
     logger.setLevel(FLAGS.loglevel)
