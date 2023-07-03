@@ -212,7 +212,7 @@ def random_transform(pixels, eval=True, degrees=None, translation=None):
         x = np.random.randint(-translation, translation+1)
         y = np.random.randint(-translation, translation+1)
         move = (x,y)
-        transformed = image.rotate(angle=angle, resample=Image.Resampling.BICUBIC, translate=move, fillcolor=0)
+        transformed = image.rotate(angle=angle, resample=Image.Resampling.NEAREST, translate=move, fillcolor=0)
         pixel_data = transformed.getdata()
         return np.array(pixel_data, dtype=np.float32).reshape(-1,1) / 255
 
