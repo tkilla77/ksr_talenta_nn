@@ -30,7 +30,7 @@ canvas.addEventListener("mouseup", draw("remove","mousemove","mouseup"));
 canvas.addEventListener("touchend", draw("remove","touchmove","touchend"));
 
 /** Scales the current canvas contents to 28x28 and sends the data to the server. */
-async function predict(canvas, history) {
+async function predict(canvas, model, history) {
     // Create scaled-down version.
     let bitmap = await createImageBitmap(canvas, {
         resizeWidth: 28,
@@ -93,10 +93,24 @@ async function predict(canvas, history) {
     }
 }
 
+async function fill_models(select) {
+    models = await (await fetch('/list/mnist')).json()
+    models.forEach(model => {
+        let option = document.createElement('option');
+        option.innerText = model;
+        option.setAttribute('value', model);
+        select.appendChild(option);
+    });
+    select.value = models[0];
+}
+
+let select = document.getElementById('models');
+fill_models(select)
+
 let predict_button = document.getElementById('predict');
 let history = document.getElementById('history');
 predict_button.addEventListener("click", e => {
-    predict(canvas, history);
+    predict(canvas, select.value, history);
     g.fillRect(0, 0, canvas.width, canvas.height);
 });
 let clear_button = document.getElementById('clear');
