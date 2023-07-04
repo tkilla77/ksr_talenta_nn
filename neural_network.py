@@ -212,12 +212,12 @@ def random_transform(target, pixels, eval=True, degrees=None, translation=None, 
     pixels = pixels.reshape(28,28)
     with Image.fromarray(pixels, mode="L") as image:
         # Inject NaNs for a fraction of the samples
+        angle = np.random.randint(-degrees, degrees+1)
         if np.random.random() < produce_nans:
             target = 10
             image = ImageOps.mirror(image)
-            angle=np.random.choice([-60, 60])
-        else:
-            angle = np.random.randint(-degrees, degrees+1)
+            angle += np.random.choice([-60, 60])
+
         x = np.random.randint(-translation, translation+1)
         y = np.random.randint(-translation, translation+1)
         move = (x,y)
