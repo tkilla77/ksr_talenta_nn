@@ -71,7 +71,6 @@ class NN:
     """A neural network."""
     def __init__(self, layers):
         self.layers = layers
-        logger.info("New NN with shape: %s", [str(l) for l in self.layers])
 
     @staticmethod
     def WithRandomWeights(dimensions):
@@ -80,6 +79,7 @@ class NN:
         for dimension in dimensions[1:]:
             layers.append(Layer(np.random.rand(dimension, lastDim) - 0.5))
             lastDim = dimension
+        logger.info("New NN with random weights and shape: %s", [str(l) for l in layers])
         return NN(layers)
 
     @staticmethod
@@ -87,6 +87,7 @@ class NN:
         layers = []
         for newweights in weights:
             layers.append(Layer(newweights))
+        logger.info("Loaded NN with shape: %s", [str(l) for l in layers])
         return NN(layers)
 
     @staticmethod
