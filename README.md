@@ -4,7 +4,7 @@ A simple dense neural network using only numpy for use in introductory ML classe
 See https://sca.ksr.ch/doku.php?id=talit:neuronale_netze_kurs for the accompanying materials.
 
 ## Training
-See `neural_network.py`: 
+See [`neural_network.py`](neural_network.py): 
 
 Train a new network from scratch:
 
@@ -34,12 +34,16 @@ python neural_network.py \
 ```
 
 # Serve
-See `app.py`.
+See [`app.py`](app.py).
 
 Serve a trained network and test with your own drawn digits. Note that the code expects to find the network in `mnist_best.npz`.
 
 ```bash
 python -m flask run
-````
+```
 
 Visit http://localhost:5000 to visit the app.
+
+# Keras and Convolutional Networks
+
+See [`keras.ipynb`](keras.ipynb) for an intro to convolutional neural networks (CNNs) and how to use them to improve digit recognition. 
