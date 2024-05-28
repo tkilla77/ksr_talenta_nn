@@ -18,7 +18,7 @@ def index():
 def models():
     models = glob.glob('*.npz')
     names = [os.path.splitext(os.path.basename(m))[0] for m in models]
-    return names
+    return jsonify(names)
 
 @app.route('/predict/mnist', methods=['POST'])
 def predict():
