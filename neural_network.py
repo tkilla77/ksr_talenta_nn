@@ -31,6 +31,7 @@ flags.DEFINE_string('loadfile', '', 'The file to read weights from. If not given
 flags.DEFINE_string('savefile', '', 'The file to store the network weights. If not given, nothing is saved')
 flags.DEFINE_float('learningrate', 0.01, 'The learning rate')
 flags.DEFINE_boolean('train', False, 'Whether to train the model or only evaluate')
+flags.DEFINE_boolean('evalall', False, 'In eval-mode, evaluate all models in folder')
 flags.DEFINE_multi_integer('dim', [4,3,2], 'The dimensions of the NN, only used if no loadfile is given.')
 flags.DEFINE_integer('maxruns', 1000, 'The number of runs to execute.')
 flags.DEFINE_integer('reportingBatchSize', 1000, 'The number of evaluations after which to report.')
@@ -150,6 +151,7 @@ class ForwardEvaluator:
                 batchCorrect = correct
 
         logger.info("Success rate: %d of %d (%f%%)", correct, count, correct * 100.0 / count)
+        return {'accuracy' : correct / count}
 
     def Evaluate(self, nn, input):
         """A single feed-forward pass."""
@@ -233,15 +235,32 @@ def main(argv):
     #                np.array([[2.6, 2.1, -1.2],[-2.3, -2.3, 1.1]])])
     if FLAGS.loadfile:
         nn = NN.LoadFromFile(FLAGS.loadfile)
-    else:
+    elif FLAGS.train:
         nn = NN.WithRandomWeights(FLAGS.dim)
     
 
     if FLAGS.train:
         evaluator = ForwardEvaluator(GradientDescentOptimizer(FLAGS.learningrate))
+    elif FLAGS.evalall:
+        import glob, operator
+        models = glob.glob('*.npz')
+        results = []
+        for path in models:
+            try:
+                model = NN.LoadFromFile(path)
+                evaluator = ForwardEvaluator()
+                result = evaluator.EvalLoop(model, FLAGS.maxruns, readCsvLines255(FLAGS.datafile), FLAGS.reportingBatchSize)
+                logger.info(f'Model accuracy for {path}: {result['accuracy']:.2%}')
+                results.append((path, result['accuracy']))
+            except Exception as e:
+                logger.warning(f'Unable to evaluate {path}, {e}')
+        results.sort(key=operator.itemgetter(1), reverse=True)
+        logger.info(f'Best model: {results[0][0]} ({results[0][1]:.2%})')
+        logger.info(f'full ranking: {results}')
+        return
     else:
         evaluator = ForwardEvaluator()
-    
+
     evaluator.EvalLoop(nn, FLAGS.maxruns, readCsvLines255(FLAGS.datafile), FLAGS.reportingBatchSize)
 
     if FLAGS.savefile and FLAGS.train:
