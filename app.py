@@ -43,7 +43,7 @@ def predict():
     request_json = request.get_json()
     model = request_json['label']
     model_file = f"{model}.npz"
-    assert np.DataSource().exists(model_file)
+    assert np.lib.npyio.DataSource().exists(model_file)
     image_url = request_json['data']
     assert image_url.startswith('data:image/')
 
