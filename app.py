@@ -16,9 +16,36 @@ def index():
 
 @app.route('/list/mnist')
 def models():
-    models = glob.glob('*.npz')
+    models = glob.glob('*.npz') + glob.glob('*.keras')
     names = [os.path.splitext(os.path.basename(m))[0] for m in models]
     return jsonify(names)
+
+
+def read_pixels(image_url):
+    assert image_url.startswith('data:image/')
+
+    # 1: Open the image 
+    image_response = urllib.request.urlopen(image_url)
+    image_bytes = image_response.read()
+    with Image.open(BytesIO(image_bytes)) as image:
+
+        # 2: Convert to 8bit grayscale
+        # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.convert
+        # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
+        image = image.convert('L')
+
+        # 3: Ensure we have the expected size.
+        size = image.size
+        target_size = (28,28)
+        if size != target_size:
+            app.logger.warning(f"Resizing image from {size} to {target_size}")
+            image = image.resize(target_size)
+        
+        # 4: Get the pixel values and normalize from [0,255] to [0,1)
+        pixel_data = image.getdata()
+        assert len(pixel_data) == target_size[0] * target_size[1]
+        pixels = np.array(pixel_data) / 255
+        return pixels
 
 @app.route('/predict/mnist', methods=['POST'])
 def predict():
@@ -43,45 +70,28 @@ def predict():
     request_json = request.get_json()
     model = request_json['label']
     model_file = f"{model}.npz"
-    assert np.lib.npyio.DataSource().exists(model_file)
-    image_url = request_json['data']
-    assert image_url.startswith('data:image/')
-
-    # 1: Open the image 
-    image_response = urllib.request.urlopen(image_url)
-    image_bytes = image_response.read()
-    with Image.open(BytesIO(image_bytes)) as image:
-
-        # 2: Convert to 8bit grayscale
-        # https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.Image.convert
-        # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes
-        image = image.convert('L')
-
-        # 3: Ensure we have the expected size.
-        size = image.size
-        target_size = (28,28)
-        if size != target_size:
-            app.logger.warning(f"Resizing image from {size} to {target_size}")
-            image = image.resize(target_size)
-        
-        # 4: Get the pixel values and normalize from [0,255] to [0,1)
-        pixel_data = image.getdata()
-        assert len(pixel_data) == target_size[0] * target_size[1]
-        pixels = np.array(pixel_data) / 255
-
+    if np.lib.npyio.DataSource().exists(model_file):
         # 5: Feed-forward through network
         nn = neural_network.NN.LoadFromFile(model_file)
         eval =  neural_network.ForwardEvaluator()
-        prediction = eval.Evaluate(nn, pixels)
-
-        # 6: Formulate response.
-        digit = int(np.argmax(prediction))
-        full = np.round(prediction, 2)
-        return jsonify({
-            'label': 'mnist_digits_v1',
-            'prediction': digit,
-            'full_prediction': full.tolist(),
-        })
+        prediction = eval.Evaluate(nn, read_pixels(request_json['data']))
+    else:
+        model_file = f"{model}.keras"
+        from tensorflow.keras import models
+        tf_model = models.load_model(model_file)
+        pixels = read_pixels(request_json['data'])
+        pixels = pixels.reshape(28, 28)
+        pixels = np.expand_dims(pixels, -1)
+        pixels = np.expand_dims(pixels, 0)
+        prediction = tf_model.predict(pixels, verbose=0)[0]
+    # 6: Formulate response.
+    digit = int(np.argmax(prediction))
+    full = np.round(np.asfarray(prediction), 2)
+    return jsonify({
+        'label': model,
+        'prediction': digit,
+        'full_prediction': full.tolist(),
+    })
     
 if __name__ == '__main__':
     app.run()
