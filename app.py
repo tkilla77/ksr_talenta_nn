@@ -1,7 +1,7 @@
 import urllib
 from PIL import Image
 import neural_network
-from tensorflow.keras import models
+from tensorflow.keras import models as keras_models
 import numpy as np
 import glob, os
 from io import BytesIO
@@ -78,7 +78,7 @@ def predict():
         prediction = eval.Evaluate(nn, read_pixels(request_json['data']))
     else:
         model_file = f"{model}.keras"
-        tf_model = models.load_model(model_file)
+        tf_model = keras_models.load_model(model_file)
         pixels = read_pixels(request_json['data'])
         pixels = pixels.reshape(28, 28)
         pixels = np.expand_dims(pixels, -1)
