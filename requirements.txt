@@ -1,6 +1,6 @@
 absl-py~=2.1.0
 blinker~=1.8.2
-certifi~=2024.2.2
+certifi~=2024.07.04
 click~=8.1.7
 Flask~=3.0.3
 importlib_metadata~=7.1.0
