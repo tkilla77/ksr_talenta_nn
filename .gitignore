@@ -1,5 +1,6 @@
 data_mnist/mnist_test.csv
 data_mnist/mnist_train.csv
 *.npz
+*.keras
 .DS_Store
 __pycache__
