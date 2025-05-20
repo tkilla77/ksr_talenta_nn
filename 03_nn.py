@@ -48,9 +48,9 @@ class Network:
  
         # COST
         # target output - actual output
-        print(t.shape, y.shape)
+        #print(t.shape, y.shape)
         error_output = t - y
-        print(error_output.shape)
+        #print(error_output.shape)
  
 
         # SPLIT ERROR
