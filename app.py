@@ -86,7 +86,7 @@ def predict():
         prediction = tf_model.predict(pixels, verbose=0)[0]
     # 6: Formulate response.
     digit = int(np.argmax(prediction))
-    full = np.round(np.asfarray(prediction), 2)
+    full = np.round(np.asarray(prediction, dtype='float64'), 2)
     return jsonify({
         'label': model,
         'prediction': digit,

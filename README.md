@@ -19,7 +19,7 @@ Retrain an existing network by first loading it:
 
 ```bash
 python neural_network.py \
-    --loadfile mnist_best.npz
+    --loadfile mnist_best.npz \
     --savefile mnist_best.npz \
     --datafile data_mnist/mnist_train.csv \
     --train --learningrate 0.01 --maxruns 200000
