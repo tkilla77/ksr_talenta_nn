@@ -9,7 +9,7 @@ See [`neural_network.py`](neural_network.py):
 Train a new network from scratch:
 
 ```bash
-python neural_network.py --dim 784 --dim 100 --dim 50 --dim 10 \
+python neural_network.py --dim 784 --dim 100 --dim 50 --dim 11 \
     --savefile mnist_best.npz \
     --datafile data_mnist/mnist_train.csv \
     --train --learningrate 0.02 --maxruns 400000
@@ -29,6 +29,14 @@ python neural_network.py \
 ```bash
 python neural_network.py \
     --loadfile mnist_best.npz \
+    --datafile data_mnist/mnist_test.csv \
+    --maxruns 4000
+```
+
+Evaluate all models in folder:
+```bash
+python neural_network.py \
+    --evalall \
     --datafile data_mnist/mnist_test.csv \
     --maxruns 4000
 ```

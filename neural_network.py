@@ -256,7 +256,7 @@ def main(argv):
                 logger.warning(f'Unable to evaluate {path}, {e}')
         results.sort(key=operator.itemgetter(1), reverse=True)
         logger.info(f'Best model: {results[0][0]} ({results[0][1]:.2%})')
-        logger.info(f'full ranking: {results}')
+        logger.info(f'full ranking: \n{"\n".join(f"{m:30}{a:7.3f}" for m,a in results)}')
         return
     else:
         evaluator = ForwardEvaluator()
