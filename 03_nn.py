@@ -21,7 +21,7 @@ class Network:
         """
         data = record.split(',')
         # INPUT DATA
-        x = np.asfarray(data[1:len(data)]) / 255.  # divide by 255 to get nr btw 0 and 1
+        x = np.asarray(data[1:len(data)], dtype=float) / 255.  # divide by 255 to get nr btw 0 and 1
         # TARGET DATA
         target_nr = int(data[0]) #number
         # convert number into vector, with 1 at position corresponding to number
