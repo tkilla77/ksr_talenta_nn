@@ -104,9 +104,9 @@ class Network:
 # 1. network: dark bright
 def dark_bright():
     print("NEURAL NETWORT DARK BRIGHT")
-    with open('data_csv/data_dark_bright_training_20000.csv', 'r') as f:
+    with open('data_toy_problem/data_dark_bright_training_20000.csv', 'r') as f:
         data_db_train_list = f.readlines()
-    with open('data_csv/data_dark_bright_test_4000.csv', 'r') as f:
+    with open('data_toy_problem/data_dark_bright_test_4000.csv', 'r') as f:
         data_db_test_list = f.readlines()
     
     network_db = Network(4, 3, 2)
