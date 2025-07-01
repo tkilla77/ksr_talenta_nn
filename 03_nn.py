@@ -54,7 +54,7 @@ class Network:
  
 
         # SPLIT ERROR
-        # proportional to weighs
+        # proportional to weights
         error_hidden = np.dot(self.wB.T,error_output)
         error_input = np.dot(self.wA.T,error_hidden)
  
