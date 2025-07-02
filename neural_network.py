@@ -3,7 +3,7 @@ Usage:
 
 Training: train a new network from scratch
 
-$ python neural_network.py --dim 784 --dim 100 --dim 50 --dim 10 \
+$ python neural_network.py --dim 784 --dim 100 --dim 50 --dim 11 \
     --savefile mnist_best.npz \
     --datafile data_mnist/mnist_train.csv \
     --train --learningrate 0.02 --maxruns 400000
@@ -213,7 +213,7 @@ def random_transform(target, pixels, eval=True, degrees=None, translation=None, 
     
     # mode 'L' means 8bit grayscale
     pixels = pixels.reshape(28,28)
-    with Image.fromarray(pixels, mode="L") as image:
+    with Image.fromarray(pixels) as image:
         # Inject NaNs for a fraction of the samples
         angle = np.random.randint(-degrees, degrees+1)
         if np.random.random() < produce_nans:
