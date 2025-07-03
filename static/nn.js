@@ -69,7 +69,10 @@ async function predict(canvas, model, history) {
         if (tbody.childNodes.length > 9) {
             tbody.removeChild(tbody.firstChild);
         }
-        row = document.createElement("tr");
+        let row = document.createElement("tr");
+        let model = document.createElement("td");
+        model.innerText = json.label
+        row.appendChild(model)
         im = document.createElement("td");
         im.addEventListener("click", async e => {
             let bitmap = await createImageBitmap(sent_image, {
