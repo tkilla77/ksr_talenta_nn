@@ -69,17 +69,17 @@ def predict():
 
     # Ensure we agree on the version and that the image URL uses the data scheme.
     request_json = request.get_json()
+    pixels = read_pixels(request_json['data'])
     model = request_json['label']
     model_file = f"{model}.npz"
     if np.lib.npyio.DataSource().exists(model_file):
         # 5: Feed-forward through network
         nn = neural_network.NN.LoadFromFile(model_file)
         eval =  neural_network.ForwardEvaluator()
-        prediction = eval.Evaluate(nn, read_pixels(request_json['data']))
+        prediction = eval.Evaluate(nn, pixels)
     else:
         model_file = f"{model}.keras"
         tf_model = keras_models.load_model(model_file)
-        pixels = read_pixels(request_json['data'])
         pixels = pixels.reshape(28, 28)
         pixels = np.expand_dims(pixels, -1)
         pixels = np.expand_dims(pixels, 0)
