@@ -17,7 +17,7 @@ docopt==0.6.2
 executing==2.2.0
 Flask==3.1.1
 flatbuffers==25.2.10
-fonttools==4.58.4
+fonttools
 gast==0.6.0
 google-pasta==0.2.0
 grpcio==1.73.0
