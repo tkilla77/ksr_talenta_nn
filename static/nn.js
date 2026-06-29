@@ -78,7 +78,7 @@ async function predict(canvas, model, history) {
             let bitmap = await createImageBitmap(sent_image, {
                 resizeWidth: 280,
                 resizeHeight: 280,
-                resizeQuality: 'medium',
+                resizeQuality: 'pixelated',
             });
             let ctx = canvas.getContext("2d");
             ctx.drawImage(bitmap, 0, 0);
